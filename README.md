@@ -48,9 +48,13 @@ Make sure you have Git and Node.js installed, then run the following commands:
 ```
 git clone https://github.com/p-e-w/waidrin.git
 cd waidrin
-npm install
+npm ci --ignore-scripts
 npm run build
 ```
+
+This repository includes an `.npmrc` that disables dependency lifecycle scripts
+by default. Keep `--ignore-scripts` enabled unless you have reviewed the package
+changes you are installing and intentionally need a dependency's install hook.
 
 
 ## Running
