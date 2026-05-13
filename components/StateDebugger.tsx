@@ -10,12 +10,11 @@ import { RxCross2 } from "react-icons/rx";
 import { useShallow } from "zustand/shallow";
 import { type StoredState, useStateStore } from "@/lib/state";
 
-// https://github.com/mac-s-g/react-json-view/issues/121#issuecomment-2578199942
 const ReactJsonView = dynamic(() => import("@microlink/react-json-view"), { ssr: false });
 
+const isDev = process.env.NODE_ENV === "development";
+
 export default function StateDebugger() {
-  // We need to manually open the dialog using a custom event handler,
-  // because the Tooltip component is incompatible with Dialog.Trigger.
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { state, setState } = useStateStore(
@@ -32,6 +31,8 @@ export default function StateDebugger() {
   delete filteredState.backends;
   delete filteredState.set;
   delete filteredState.setAsync;
+
+  if (!isDev) return null;
 
   return (
     <Dialog.Root open={dialogOpen} onOpenChange={setDialogOpen} modal={false}>

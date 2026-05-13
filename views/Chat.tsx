@@ -9,6 +9,7 @@ import ErrorBar from "@/components/ErrorBar";
 import EventView from "@/components/EventView";
 import ProcessingBar from "@/components/ProcessingBar";
 import { abort, isAbortError, next } from "@/lib/engine";
+import { sanitizeErrorMessage } from "@/lib/sanitize";
 import { useStateStore } from "@/lib/state";
 
 export default function Chat() {
@@ -31,7 +32,7 @@ export default function Chat() {
         if (!message) {
           message = "Unknown error";
         }
-        setErrorMessage(message);
+        setErrorMessage(sanitizeErrorMessage(message));
       }
     } finally {
       setBarVisible(false);

@@ -5,6 +5,7 @@ import { Box, HoverCard, Link, Text } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import Markdown from "react-markdown";
 import { useShallow } from "zustand/shallow";
+import { sanitizeForDisplay } from "@/lib/sanitize";
 import { type NarrationEvent, useStateStore } from "@/lib/state";
 import CharacterView from "./CharacterView";
 
@@ -15,15 +16,9 @@ export default function NarrationEventView({ event }: { event: NarrationEvent })
     })),
   );
 
-  // Hack to highlight dialogue in text:
-  //
-  // 1. Surround quoted portions of text with asterisks, marking them as italics.
-  // 2. Use a custom <em> component (see below) to render italics as dialogue
-  //    if they start with quotation marks.
-  //
-  // It would be cleaner to use a dedicated semantic element instead (e.g. <span class="...">),
-  // but that requires enabling HTML support in react-markdown, which is a security risk.
-  const markdown = event.text.replaceAll(/".*?(?:"|$)/g, "*$&*");
+  // Security: Sanitize LLM-generated text before rendering as markdown.
+  // Removes potential script injection patterns while preserving prose.
+  const markdown = sanitizeForDisplay(event.text).replaceAll(/".*?(?:"|$)/g, "*$&*");
 
   const NameView = useCallback(
     // biome-ignore lint/suspicious/noExplicitAny: The correct type is private in react-markdown.

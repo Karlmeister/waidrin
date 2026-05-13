@@ -3,6 +3,7 @@
 
 import { Flex, Heading, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/shallow";
+import { sanitizeImageUrlSegment } from "@/lib/sanitize";
 import { type LocationChangeEvent, useStateStore } from "@/lib/state";
 
 export default function LocationChangeEventView({ event }: { event: LocationChangeEvent }) {
@@ -12,9 +13,11 @@ export default function LocationChangeEventView({ event }: { event: LocationChan
     })),
   );
 
+  const locationType = sanitizeImageUrlSegment(location.type);
+
   return (
     <Flex direction="column" width="100%">
-      <img src={`/images/${location.type}.png`} alt={location.type} />
+      <img src={`/images/${locationType}.png`} alt={locationType} />
 
       <Flex className="bg-(--orange-2)" direction="column" p="6">
         <Heading className="lowercase" size="7" color="orange" align="center" mb="5">

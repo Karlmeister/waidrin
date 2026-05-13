@@ -6,6 +6,7 @@ import { Label } from "radix-ui";
 import { GiBullHorns, GiDrippingBlade } from "react-icons/gi";
 import { useShallow } from "zustand/shallow";
 import WizardStep from "@/components/WizardStep";
+import { sanitizeImageUrlSegment } from "@/lib/sanitize";
 import { type SexualContentLevel, useStateStore, type ViolentContentLevel } from "@/lib/state";
 
 export default function ScenarioSetup({ onNext, onBack }: { onNext?: () => void; onBack?: () => void }) {
@@ -109,7 +110,7 @@ export default function ScenarioSetup({ onNext, onBack }: { onNext?: () => void;
         </Box>
         <img
           className="h-64 w-38.5 shadow-(--base-card-surface-box-shadow) rounded-(--radius-4)"
-          src={`/images/${state.protagonist.gender}-${state.protagonist.race}.png`}
+          src={`/images/${sanitizeImageUrlSegment(state.protagonist.gender)}-${sanitizeImageUrlSegment(state.protagonist.race)}.png`}
           alt={`${state.protagonist.gender} ${state.protagonist.race}`}
         />
       </Flex>

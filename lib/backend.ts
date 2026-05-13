@@ -1,8 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2025  Philipp Emanuel Weidmann <pew@worldwidemann.com>
-
 import { current, isDraft } from "immer";
-import OpenAI from "openai";
 import * as z from "zod/v4";
 import type { Prompt } from "./prompts";
 import { getState } from "./state";
@@ -34,75 +30,86 @@ export interface DefaultBackendSettings {
 export class DefaultBackend implements Backend {
   controller = new AbortController();
 
-  // Can be overridden by subclasses to provide custom settings.
   getSettings(): DefaultBackendSettings {
     return getState();
   }
 
-  // Can be overridden by subclasses to customize the client.
-  getClient(): OpenAI {
-    const settings = this.getSettings();
-
-    return new OpenAI({
-      baseURL: settings.apiUrl,
-      apiKey: settings.apiKey,
-      dangerouslyAllowBrowser: true,
-    });
-  }
-
   async *getResponseStream(prompt: Prompt, params: Record<string, unknown> = {}): AsyncGenerator<string> {
     try {
-      const stream = await this.getClient().chat.completions.create(
-        {
-          stream: true,
-          model: this.getSettings().model,
-          messages: [
-            { role: "system", content: prompt.system },
-            { role: "user", content: prompt.user },
-          ],
-          // These are hardcoded because the required number depends on
-          // what is being prompted for, which is also hardcoded.
-          max_tokens: 4096,
-          // Both variants need to be provided, as newer OpenAI models
-          // don't support max_tokens, while some inference engines don't
-          // support max_completion_tokens.
-          max_completion_tokens: 4096,
-          ...params,
-        },
-        { signal: this.controller.signal },
-      );
+      const settings = this.getSettings();
 
-      for await (const chunk of stream) {
-        if (chunk.choices.length === 0) {
-          // We must return directly here instead of just breaking the loop,
-          // because the OpenAI library calls controller.abort() if streaming
-          // is stopped, which would trigger the error-throwing code below.
-          return;
-        }
+      const requestPayload = {
+        apiUrl: settings.apiUrl,
+        apiKey: settings.apiKey,
+        model: settings.model,
+        stream: true,
+        messages: [
+          { role: "system", content: prompt.system },
+          { role: "user", content: prompt.user },
+        ],
+        max_tokens: 4096,
+        max_completion_tokens: 4096,
+        ...params,
+      };
 
-        const choice = chunk.choices[0];
+      const response = await fetch("/api/llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+        signal: this.controller.signal,
+      });
 
-        if (choice.delta.content) {
-          yield choice.delta.content;
-        }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(
+          typeof errorData.error === "string" ? errorData.error : `Request failed with status ${response.status}`,
+        );
+      }
 
-        if (choice.finish_reason) {
-          return;
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          const data = trimmed.slice(6);
+          if (data === "[DONE]") return;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.choices && parsed.choices.length > 0) {
+              const content = parsed.choices[0].delta?.content;
+              if (content) {
+                yield content;
+              }
+              if (parsed.choices[0].finish_reason) {
+                return;
+              }
+            }
+          } catch {
+            // Skip malformed SSE lines
+          }
         }
       }
 
-      // The OpenAI library only throws this error if abort() is called
-      // during the request itself, not if it is called while the
-      // response is being streamed. We throw it manually in this case,
-      // so error handling code can easily detect whether an error
-      // is the result of a user abort.
-      if (stream.controller.signal.aborted) {
-        throw new OpenAI.APIUserAbortError();
+      if (this.controller.signal.aborted) {
+        throw new DOMException("The user aborted a request.", "AbortError");
       }
     } finally {
-      // An AbortController cannot be reused after calling abort().
-      // Reset the controller so a new one is available for the next operation
-      // in case this operation was aborted.
       this.controller = new AbortController();
     }
   }
@@ -121,8 +128,6 @@ export class DefaultBackend implements Backend {
     let response = "";
     let count = 0;
 
-    // Send empty update at the start of the streaming process
-    // to facilitate displaying progress indicators.
     if (onToken) {
       onToken("", 0);
     }
@@ -176,7 +181,7 @@ export class DefaultBackend implements Backend {
   }
 
   isAbortError(error: unknown): boolean {
-    return error instanceof OpenAI.APIUserAbortError;
+    return error instanceof DOMException && error.name === "AbortError";
   }
 }
 

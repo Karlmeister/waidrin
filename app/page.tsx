@@ -5,13 +5,14 @@
 
 import { Text } from "@radix-ui/themes";
 import { current } from "immer";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import ErrorPopup from "@/components/ErrorPopup";
 import MainMenu from "@/components/MainMenu";
 import ProcessingOverlay from "@/components/ProcessingOverlay";
 import StateDebugger from "@/components/StateDebugger";
 import { abort, back, isAbortError, next } from "@/lib/engine";
+import { sanitizeErrorMessage } from "@/lib/sanitize";
 import { type Plugin, type PluginWrapper, useStateStore } from "@/lib/state";
 import CharacterSelect from "@/views/CharacterSelect";
 import Chat from "@/views/Chat";
@@ -21,6 +22,17 @@ import ScenarioSetup from "@/views/ScenarioSetup";
 import Welcome from "@/views/Welcome";
 import { Context } from "./plugins";
 import type { Manifest } from "./plugins/route";
+
+const TRUSTED_PLUGIN_NAMES: string[] = [];
+
+function isValidPluginManifest(manifest: Manifest): boolean {
+  if (!manifest.name || typeof manifest.name !== "string") return false;
+  if (!manifest.main || typeof manifest.main !== "string") return false;
+  if (manifest.main.includes("..") || manifest.main.includes("/") || manifest.main.includes("\\")) return false;
+  if (!manifest.main.endsWith(".js")) return false;
+  if (manifest.path.includes("..")) return false;
+  return true;
+}
 
 export default function Home() {
   const [stateLoaded, setStateLoaded] = useState(false);
@@ -43,6 +55,31 @@ export default function Home() {
     })),
   );
 
+  const [pendingPlugins, setPendingPlugins] = useState<Manifest[]>([]);
+  const [pluginConfirmCallback, setPluginConfirmCallback] = useState<(() => void) | undefined>(undefined);
+
+  const confirmPlugins = useCallback(async (manifests: Manifest[], stateRef: PluginWrapper[]) => {
+    const untrusted: Manifest[] = [];
+    for (const manifest of manifests) {
+      if (!isValidPluginManifest(manifest)) continue;
+      const isKnown = stateRef.some((p) => p.name === manifest.name) || TRUSTED_PLUGIN_NAMES.includes(manifest.name);
+      if (!isKnown) {
+        untrusted.push(manifest);
+      }
+    }
+
+    if (untrusted.length > 0) {
+      return new Promise<void>((resolve) => {
+        setPendingPlugins(untrusted);
+        setPluginConfirmCallback(() => () => {
+          setPendingPlugins([]);
+          setPluginConfirmCallback(undefined);
+          resolve();
+        });
+      });
+    }
+  }, []);
+
   const loadPlugins = async () => {
     setOverlayVisible(true);
     setOverlayTitle("Loading");
@@ -55,9 +92,13 @@ export default function Home() {
         const response = await fetch("/plugins");
         const manifests: Manifest[] = await response.json();
 
+        const validManifests = manifests.filter((m) => isValidPluginManifest(m));
+
+        await confirmPlugins(validManifests, state.plugins);
+
         state.backends = {};
 
-        outer: for (const manifest of manifests) {
+        outer: for (const manifest of validManifests) {
           let pluginWrapper: PluginWrapper | null = null;
 
           for (const plugin of state.plugins) {
@@ -109,7 +150,7 @@ export default function Home() {
       if (!message) {
         message = "Unknown error";
       }
-      setErrorMessage(message);
+      setErrorMessage(sanitizeErrorMessage(message));
       setOnErrorRetry(() => () => {
         setErrorMessage("");
         loadPlugins();
@@ -135,7 +176,7 @@ export default function Home() {
         if (!message) {
           message = "Unknown error";
         }
-        setErrorMessage(message);
+        setErrorMessage(sanitizeErrorMessage(message));
         setOnErrorRetry(() => () => {
           setErrorMessage("");
           nextView();
@@ -155,7 +196,14 @@ export default function Home() {
         setStateLoaded(true);
       });
 
-      return unsubscribe;
+      const timeout = setTimeout(() => {
+        setStateLoaded(true);
+      }, 5000);
+
+      return () => {
+        unsubscribe();
+        clearTimeout(timeout);
+      };
     }
   }, []);
 
@@ -196,6 +244,17 @@ export default function Home() {
       )}
 
       {errorMessage && <ErrorPopup errorMessage={errorMessage} onRetry={onErrorRetry} onCancel={onErrorCancel} />}
+
+      {pendingPlugins.length > 0 && pluginConfirmCallback && (
+        <ErrorPopup
+          errorMessage={`The following new plugins were detected and will execute code in your browser:\n\n${pendingPlugins.map((p) => `• ${p.name}`).join("\n")}\n\nOnly proceed if you trust the source of these plugins.`}
+          onRetry={pluginConfirmCallback}
+          onCancel={() => {
+            setPendingPlugins([]);
+            setPluginConfirmCallback(undefined);
+          }}
+        />
+      )}
     </>
   );
 }
