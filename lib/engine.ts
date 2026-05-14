@@ -2,7 +2,6 @@
 // Copyright (C) 2025  Philipp Emanuel Weidmann <pew@worldwidemann.com>
 
 import { current } from "immer";
-import { throttle } from "lodash";
 import * as z from "zod/v4";
 import { getBackend } from "./backend";
 import {
@@ -20,6 +19,52 @@ import {
 } from "./prompts";
 import * as schemas from "./schemas";
 import { getState, initialState, type Location, type LocationChangeEvent, type NarrationEvent } from "./state";
+
+function throttle<T extends (...args: never[]) => void>(
+  func: T,
+  limit: number,
+  options: { leading?: boolean; trailing?: boolean } = {},
+): T & { cancel(): void } {
+  const { leading = true, trailing = true } = options;
+  let lastCallTime = 0;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let lastArgs: Parameters<T> | null = null;
+
+  // biome-ignore lint/suspicious/noExplicitAny: throttle wrapper needs any context
+  const throttled = function (this: any, ...args: Parameters<T>) {
+    const now = Date.now();
+    lastArgs = args;
+
+    if (leading && now - lastCallTime >= limit) {
+      lastCallTime = now;
+      func.apply(this, args);
+      lastArgs = null;
+    } else if (trailing) {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(
+        () => {
+          lastCallTime = Date.now();
+          if (lastArgs) {
+            func.apply(this, lastArgs);
+            lastArgs = null;
+          }
+          timeoutId = null;
+        },
+        limit - (now - lastCallTime),
+      );
+    }
+  } as T & { cancel(): void };
+
+  throttled.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+      lastArgs = null;
+    }
+  };
+
+  return throttled;
+}
 
 // When generating a character, the location isn't determined yet.
 const RawCharacter = schemas.Character.omit({ locationIndex: true });
@@ -286,5 +331,5 @@ export function abort(): void {
 }
 
 export function isAbortError(error: unknown): boolean {
-  return getBackend().isAbortError(error);
+  return getBackend().isAbortError(error) || (error instanceof Error && error.name === "AbortError");
 }

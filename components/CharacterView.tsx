@@ -2,15 +2,19 @@
 // Copyright (C) 2025  Philipp Emanuel Weidmann <pew@worldwidemann.com>
 
 import { Flex, Heading, Text } from "@radix-ui/themes";
+import { sanitizeImageUrlSegment } from "@/lib/sanitize";
 import type { Character } from "@/lib/state";
 
 export default function CharacterView({ character }: { character: Character }) {
+  const gender = sanitizeImageUrlSegment(character.gender);
+  const race = sanitizeImageUrlSegment(character.race);
+
   return (
     <Flex width="100%" gap="6">
       <img
         className="h-48 w-28.875 shadow-(--base-card-surface-box-shadow) rounded-(--radius-4)"
-        src={`/images/${character.gender}-${character.race}.png`}
-        alt={`${character.gender} ${character.race}`}
+        src={`/images/${gender}-${race}.png`}
+        alt={`${gender} ${race}`}
       />
 
       <Flex direction="column" flexGrow="1">

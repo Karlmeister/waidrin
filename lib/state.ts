@@ -137,8 +137,12 @@ export const useStateStore = create<StoredState>()(
     {
       name: "state",
       partialize: (state) => {
-        // Don't persist functions and class instances.
+        // Don't persist functions, class instances, or sensitive data.
         const persistedState: Partial<StoredState> = { ...state };
+
+        // SECURITY: Never persist the API key to localStorage.
+        // It should be re-entered each session.
+        persistedState.apiKey = "";
 
         persistedState.plugins = state.plugins.map((plugin) => {
           const persistedPlugin: Partial<PluginWrapper> = { ...plugin };

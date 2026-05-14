@@ -3,6 +3,7 @@
 
 import { Flex, RadioCards, Text } from "@radix-ui/themes";
 import type React from "react";
+import { sanitizeImageUrlSegment } from "@/lib/sanitize";
 
 export default function ImageOption({
   title,
@@ -17,10 +18,12 @@ export default function ImageOption({
   value: string;
   disabled?: boolean;
 }) {
+  const safeImage = sanitizeImageUrlSegment(image);
+
   return (
     <RadioCards.Item
       className="flex items-end h-128 w-77 bg-(image:--image) bg-cover p-0"
-      style={{ "--image": `url(/images/${image}.png)` } as React.CSSProperties}
+      style={{ "--image": `url(/images/${safeImage}.png)` } as React.CSSProperties}
       value={value}
       disabled={disabled}
     >
