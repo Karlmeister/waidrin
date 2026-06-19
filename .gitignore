@@ -45,3 +45,4 @@ next-env.d.ts
 # plugins
 /plugins/*
 !/plugins/demo-plugin/
+.pi/skills/SKILL.md
