@@ -61,10 +61,10 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
             <Box mt="5">
               <Tabs.Content value="default">
                 <Box mb="5">
-                  <Flex width="100%" justify="between" align="end" mb="2">
-                    <Label.Root>
-                      <Text size="6">API base URL</Text>
-                    </Label.Root>
+                  <Label.Root>
+                    <Text size="6">API base URL</Text>
+                  </Label.Root>
+                  <Flex gap="2" mt="2" align="center">
                     <Select.Root
                       value={apiUrl}
                       onValueChange={(value) =>
@@ -82,21 +82,21 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
                         ))}
                       </Select.Content>
                     </Select.Root>
+                    <TextField.Root
+                      value={apiUrl}
+                      onChange={(event) =>
+                        setState((state) => {
+                          state.apiUrl = event.target.value;
+                        })
+                      }
+                      className="font-mono flex-grow"
+                      size="3"
+                      placeholder="http://localhost:8080/v1/"
+                    />
                   </Flex>
-                  <Text size="4" color="gray" mb="2">
+                  <Text size="4" color="gray" mt="1">
                     Usually ends with <Code size="3">/v1/</Code>
                   </Text>
-                  <TextField.Root
-                    value={apiUrl}
-                    onChange={(event) =>
-                      setState((state) => {
-                        state.apiUrl = event.target.value;
-                      })
-                    }
-                    className="mt-1 font-mono"
-                    size="3"
-                    placeholder="http://localhost:8080/v1/"
-                  />
                 </Box>
 
                 <Box mb="5">
