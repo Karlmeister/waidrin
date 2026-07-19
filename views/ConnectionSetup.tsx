@@ -1,13 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025  Philipp Emanuel Weidmann <pew@worldwidemann.com>
 
-import { Box, Code, Flex, Link, Tabs, Text, TextField } from "@radix-ui/themes";
+import { Box, Code, Flex, Link, Tabs, Text, TextField, Select } from "@radix-ui/themes";
 import { Label } from "radix-ui";
 import { GiOuroboros } from "react-icons/gi";
 import { useShallow } from "zustand/shallow";
 import { usePluginsStateStore } from "@/app/plugins";
 import WizardStep from "@/components/WizardStep";
 import { useStateStore } from "@/lib/state";
+
+const API_PRESETS = [
+  { label: "Ollama", url: "http://localhost:11434/v1/" },
+  { label: "LM Studio", url: "http://localhost:1234/v1/" },
+  { label: "Local (llama.cpp)", url: "http://localhost:8080/v1/" },
+  { label: "OpenAI", url: "https://api.openai.com/v1/" },
+  { label: "Groq", url: "https://api.groq.com/openai/v1/" },
+];
 
 export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => void; onBack?: () => void }) {
   const { apiUrl, apiKey, model, contextLength, activeBackend, setState } = useStateStore(
@@ -53,25 +61,42 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
             <Box mt="5">
               <Tabs.Content value="default">
                 <Box mb="5">
-                  <Label.Root>
-                    <Flex width="100%" justify="between" align="end">
+                  <Flex width="100%" justify="between" align="end" mb="2">
+                    <Label.Root>
                       <Text size="6">API base URL</Text>
-                      <Text size="4" color="gray">
-                        Usually ends with <Code size="3">/v1/</Code>
-                      </Text>
-                    </Flex>
-                    <TextField.Root
+                    </Label.Root>
+                    <Select.Root
                       value={apiUrl}
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         setState((state) => {
-                          state.apiUrl = event.target.value;
+                          state.apiUrl = value;
                         })
                       }
-                      className="mt-1 font-mono"
-                      size="3"
-                      placeholder="http://localhost:8080/v1/"
-                    />
-                  </Label.Root>
+                    >
+                      <Select.Trigger />
+                      <Select.Content>
+                        {API_PRESETS.map((preset) => (
+                          <Select.Item key={preset.url} value={preset.url}>
+                            {preset.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
+                  </Flex>
+                  <Text size="4" color="gray" mb="2">
+                    Usually ends with <Code size="3">/v1/</Code>
+                  </Text>
+                  <TextField.Root
+                    value={apiUrl}
+                    onChange={(event) =>
+                      setState((state) => {
+                        state.apiUrl = event.target.value;
+                      })
+                    }
+                    className="mt-1 font-mono"
+                    size="3"
+                    placeholder="http://localhost:8080/v1/"
+                  />
                 </Box>
 
                 <Box mb="5">
