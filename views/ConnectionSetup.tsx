@@ -40,11 +40,13 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const fetchModels = async () => {
     if (!apiUrl) return;
     setIsFetching(true);
     setHasAttemptedFetch(true);
+    setHasError(false);
     try {
       const response = await fetch(`/api/llm?targetUrl=${encodeURIComponent(apiUrl)}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -53,7 +55,12 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
       const modelNames = models.map((m: any) => m.id || m.name || (typeof m === 'string' ? m : JSON.stringify(m)));
       setAvailableModels(modelNames);
     } catch (error) {
-      console.error("Failed to fetch models:", error);
+      console.error(
+        "Failed to fetch models:",
+        error
+      );
+      setHasError(true);
+      setAvailableModels([]);
     } finally {
       setIsFetching(false);
     }
@@ -163,9 +170,11 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
                         }
                       >
                         <Select.Trigger>
-                          {!hasAttemptedFetch || (hasAttemptedFetch && availableModels.length === 0) 
+                          {hasError
+                            ? "Error fetching models"
+                            : !hasAttemptedFetch || (hasAttemptedFetch && availableModels.length === 0)
                             ? "No models loaded"
-                            : (model || "Select model")}
+                            : model || "Select model"}
                         </Select.Trigger>
                         <Select.Content>
                           {!hasAttemptedFetch ? (
