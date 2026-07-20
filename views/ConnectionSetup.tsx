@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025  Philipp Emanuel Weidmann <pew@worldwidemann.com>
 
-import { Box, Code, Flex, Link, Tabs, Text, TextField, Select } from "@radix-ui/themes";
+import { Box, Code, Flex, Link, Tabs, Text, TextField, Select, Button } from "@radix-ui/themes";
 import { Label } from "radix-ui";
 import { GiOuroboros } from "react-icons/gi";
+import { IoRefreshOutline } from "react-icons/io5";
+import React, { useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { usePluginsStateStore } from "@/app/plugins";
 import WizardStep from "@/components/WizardStep";
@@ -34,6 +36,28 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
       backendUIs: state.backendUIs,
     })),
   );
+
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+
+  const fetchModels = async () => {
+    if (!apiUrl) return;
+    setIsFetching(true);
+    setHasAttemptedFetch(true);
+    try {
+      const response = await fetch(`/api/llm?targetUrl=${encodeURIComponent(apiUrl)}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      const models = Array.isArray(data) ? data : data.data || [];
+      const modelNames = models.map((m: any) => m.id || m.name || (typeof m === 'string' ? m : JSON.stringify(m)));
+      setAvailableModels(modelNames);
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   return (
     <WizardStep title="Connection" onNext={onNext} onBack={onBack}>
@@ -128,21 +152,57 @@ export default function ConnectionSetup({ onNext, onBack }: { onNext?: () => voi
                   <Label.Root>
                     <Flex width="100%" justify="between" align="end">
                       <Text size="6">Model</Text>
-                      <Text size="4" color="gray">
-                        Can be left empty for llama.cpp and Kobold
-                      </Text>
                     </Flex>
-                    <TextField.Root
-                      value={model}
-                      onChange={(event) =>
-                        setState((state) => {
-                          state.model = event.target.value;
-                        })
-                      }
-                      className="mt-1 font-mono"
-                      size="3"
-                      placeholder="mistral-small3.2"
-                    />
+                    <Flex gap="2" mt="2" align="center">
+                      <Select.Root
+                        value={model}
+                        onValueChange={(value) =>
+                          setState((state) => {
+                            state.model = value;
+                          })
+                        }
+                      >
+                        <Select.Trigger>
+                          {!hasAttemptedFetch || (hasAttemptedFetch && availableModels.length === 0) 
+                            ? "No models loaded"
+                            : (model || "Select model")}
+                        </Select.Trigger>
+                        <Select.Content>
+                          {!hasAttemptedFetch ? (
+                            <Select.Item value="none" disabled>Click refresh to load</Select.Item>
+                          ) : availableModels.length === 0 ? (
+                            <Select.Item value="none" disabled>No models found</Select.Item>
+                          ) : (
+                            availableModels.map((m) => (
+                              <Select.Item key={m} value={m}>
+                                {m}
+                              </Select.Item>
+                            ))
+                          )}
+                        </Select.Content>
+                      </Select.Root>
+
+                      <Button
+                        variant="ghost"
+                        size="1"
+                        onClick={fetchModels}
+                        disabled={isFetching || !apiUrl}
+                      >
+                        <IoRefreshOutline size="20" className={isFetching ? "animate-spin" : ""} />
+                      </Button>
+
+                      <TextField.Root
+                        value={model}
+                        onChange={(event) =>
+                          setState((state) => {
+                            state.model = event.target.value;
+                          })
+                        }
+                        className="font-mono flex-grow"
+                        size="3"
+                        placeholder="mistral-small3.2"
+                      />
+                    </Flex>
                   </Label.Root>
                 </Box>
 

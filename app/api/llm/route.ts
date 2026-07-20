@@ -14,6 +14,44 @@ interface LLMRequestBody {
   [key: string]: unknown;
 }
 
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const targetUrl = searchParams.get("targetUrl");
+
+  if (!targetUrl) {
+    return NextResponse.json({ error: "Missing targetUrl parameter" }, { status: 400 });
+  }
+
+  const urlError = validateApiUrl(targetUrl);
+  if (urlError) {
+    return NextResponse.json({ error: urlError }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = targetUrl.replace(/\/+$/, "");
+    const response = await fetch(`${baseUrl}/models`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: request.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      console.error(`LLM models fetch error (${response.status}): ${sanitizeErrorMessage(errorText)}`);
+      return NextResponse.json({ error: `LLM API returned status ${response.status}` }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(`LLM proxy models error: ${sanitizeErrorMessage(message)}`);
+    return NextResponse.json({ error: `Proxy error: ${message}` }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
