@@ -45,12 +45,15 @@ export default function CharacterSelect({ onNext, onBack }: { onNext?: () => voi
             state.protagonist.race = value;
           })
         }
-        columns="3"
+        columns="5"
       >
         <ImageOption title="Human" image={`${gender}-human`} value="human" />
         <ImageOption title="Elf" image={`${gender}-elf`} value="elf" />
         <ImageOption title="Dwarf" image={`${gender}-dwarf`} value="dwarf" />
+        <ImageOption title="Orc" image={`${gender}-orc`} value="orc" />
+        <ImageOption title="Goblin" image={`${gender}-goblin`} value="goblin" />
       </RadioCards.Root>
     </WizardStep>
   );
 }
+

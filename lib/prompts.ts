@@ -30,7 +30,8 @@ export const generateWorldPrompt = makePrompt(`
 Create a fictional world for a fantasy adventure RPG and return its name
 and a short description (100 words maximum) as a JSON object.
 Do not use a cliched name like 'Eldoria'.
-The world is populated by humans, elves, and dwarves.
+The world is populated by humans, elves, dwarves, orcs and goblins.
+These 5 sentient races have different degrees of intelligence, strength, magic and abilities.
 `);
 
 export function generateProtagonistPrompt(state: State): Prompt {

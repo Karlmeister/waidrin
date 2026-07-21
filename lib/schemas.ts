@@ -24,7 +24,7 @@ export const World = z.object({
 
 export const Gender = z.enum(["male", "female"]);
 
-export const Race = z.enum(["human", "elf", "dwarf"]);
+export const Race = z.enum(["human", "elf", "dwarf", "orc", "goblin"]);
 
 export const Character = z.object({
   name: Name,
@@ -103,3 +103,4 @@ export const State = z.object({
   events: Event.array(),
   actions: Action.array(),
 });
+

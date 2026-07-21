@@ -22,7 +22,7 @@ export default function ImageOption({
 
   return (
     <RadioCards.Item
-      className="flex items-end h-128 w-77 bg-(image:--image) bg-cover p-0"
+      className="flex items-end h-75 w-45 bg-(image:--image) bg-cover p-0"
       style={{ "--image": `url(/images/${safeImage}.png)` } as React.CSSProperties}
       value={value}
       disabled={disabled}
@@ -36,3 +36,4 @@ export default function ImageOption({
     </RadioCards.Item>
   );
 }
+
