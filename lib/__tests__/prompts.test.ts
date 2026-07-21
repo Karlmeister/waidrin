@@ -23,7 +23,7 @@ describe("generateWorldPrompt", () => {
   it("collapses single newlines into spaces so the user prompt is a single line", () => {
     expect(generateWorldPrompt.user).not.toContain("\n");
     expect(generateWorldPrompt.user).toContain("fantasy");
-    expect(generateWorldPrompt.user).toContain("humans, elves, and dwarves");
+    expect(generateWorldPrompt.user).toContain("humans, elves, dwarves, orcs and goblins");
   });
 });
 
