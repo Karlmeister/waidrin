@@ -36,7 +36,7 @@ Note that only the fantasy genre is currently implemented.
 The system generates a suitable character name and biography from the player's
 base choices. The player has the option to override those generated attributes.
 
-![Character](https://github.com/user-attachments/assets/844eb154-4379-4331-8a69-25ff3596695a)
+![Character](https://github.com/user-attachments/assets/101fe490-12e4-48eb-90a9-ce57fb0f96eb)
 
 ![Generating](https://github.com/user-attachments/assets/22c4e6b3-f891-4c00-a0a8-ce242635660e)
 
