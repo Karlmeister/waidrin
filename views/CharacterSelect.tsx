@@ -7,6 +7,7 @@ import { useShallow } from "zustand/shallow";
 import ImageOption from "@/components/ImageOption";
 import WizardStep from "@/components/WizardStep";
 import { type Gender, type Race, useStateStore } from "@/lib/state";
+import { Race as RaceEnum } from "@/lib/schemas";
 
 export default function CharacterSelect({ onNext, onBack }: { onNext?: () => void; onBack?: () => void }) {
   const { gender, race, setState } = useStateStore(
@@ -47,11 +48,15 @@ export default function CharacterSelect({ onNext, onBack }: { onNext?: () => voi
         }
         columns="5"
       >
-        <ImageOption title="Human" image={`${gender}-human`} value="human" />
-        <ImageOption title="Elf" image={`${gender}-elf`} value="elf" />
-        <ImageOption title="Dwarf" image={`${gender}-dwarf`} value="dwarf" />
-        <ImageOption title="Orc" image={`${gender}-orc`} value="orc" />
-        <ImageOption title="Goblin" image={`${gender}-goblin`} value="goblin" />
+        {RaceEnum.options.map((raceValue) => (
+            <ImageOption
+              key={raceValue}
+              title={raceValue.charAt(0).toUpperCase() + raceValue.slice(1)}
+              image={`${gender}-${raceValue}`}
+              value={raceValue}
+              size="h-75 w-45"
+            />
+          ))}
       </RadioCards.Root>
     </WizardStep>
   );

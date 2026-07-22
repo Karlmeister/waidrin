@@ -11,18 +11,20 @@ export default function ImageOption({
   image,
   value,
   disabled,
+  size,
 }: {
   title: string;
   description?: string;
   image: string;
   value: string;
   disabled?: boolean;
+  size?: string;
 }) {
   const safeImage = sanitizeImageUrlSegment(image);
 
   return (
     <RadioCards.Item
-      className="flex items-end h-75 w-45 bg-(image:--image) bg-cover p-0"
+      className={`flex items-end ${size ?? "h-128 w-77"} bg-(image:--image) bg-cover p-0`}
       style={{ "--image": `url(/images/${safeImage}.png)` } as React.CSSProperties}
       value={value}
       disabled={disabled}
